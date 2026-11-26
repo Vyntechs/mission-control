@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mission Control">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1D222A" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-256.png">
+<link rel="icon" href="icon-256.png">
+<title>Mission Control</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cuxzolgrquwpkgljnypa.supabase.co; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<script id="mc-online" type="application/json">{"url": "https://cuxzolgrquwpkgljnypa.supabase.co", "key": "sb_publishable_fD8PGHnEOSOTDCmFEw8LvQ_80YInRk_"}</script>
+<!-- Mission Control's Health row, alone: plan slice 1, day 2. Drawn in the parts of
+     design/plans/mission-control-looks/home.html (look C), colours from colours.md: Health is blue (--s-work).
+     The page holds no facts: it draws the Health document (mission/health.py), whose every sentence was written
+     and checked when the facts were read. It only picks, by the time, between the sentences the document gives
+     (view(), the same pick as health.shown()).
+     Built for Pages (python -m mission.online build) the mark above becomes the database's address and its
+     publishable key; the page then reads the Health row from mc with his own sign-in (an 8-digit code sent to his
+     email), and without it shows only the sign-in line. On this PC (python -m mission.serve) it reads health.json. -->
+<style>
+:root{
+  --bg:#F5F6F8;--panel:#FFFFFF;--panel2:#F1F3F6;--fg:#111418;--muted:#59626F;
+  --line:#E3E7EC;--line-strong:#C9D0D9;
+  --bar:#FFFFFF;--bar-fg:#111418;--bar-muted:#59626F;--bar-line:#C9D0D9;
+  --s-work:#1C5BFF;
+  --amber:#8A4B00;--amber-bg:#FFF1DB;--grey:#636C79;
+  --shadow:0 1px 2px rgba(17,20,24,.06),0 2px 8px rgba(17,20,24,.04);
+  --font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"SF Pro Text",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --display:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"SF Pro Display",Roboto,"Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0D1014;--panel:#161A20;--panel2:#1D222A;--fg:#EDF0F4;--muted:#A2ABB7;
+  --line:#272D36;--line-strong:#3A424E;
+  --bar:#1D222A;--bar-fg:#EDF0F4;--bar-muted:#A2ABB7;--bar-line:#3A424E;
+  --s-work:#6C8CFF;
+  --amber:#FFC266;--amber-bg:#3A2A10;--grey:#8E97A4;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+  color-scheme:dark;
+}}
+.s-work{--sec:var(--s-work)}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.42;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+h1,h2,p{margin:0}
+svg{flex:none}
+
+/* the page keeps clear of the notch, the rounded corners and the home bar */
+.mc{min-height:100%;display:flex;flex-direction:column;gap:12px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom:max(12px, env(safe-area-inset-bottom, 0px))}
+.top{display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+  margin-inline:calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding:calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
+  background:var(--bar);color:var(--bar-fg);border-bottom:1px solid var(--bar-line)}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.wordmark{height:18px;width:auto;fill:currentColor}
+.product{font-family:var(--display);font-weight:600;font-size:15px;padding-left:10px;border-left:1px solid var(--bar-line);white-space:nowrap}
+/* the freshness line keeps one line whatever it says, so the page never moves when it changes */
+.fresh{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;line-height:18px;color:var(--bar-muted);white-space:nowrap}
+.fresh i{width:7px;height:7px;border-radius:50%;border:1.5px solid currentColor;flex:none}
+
+/* the big box, like the Workbench's: the section colour is the top edge and the name, never the fill */
+.box{display:flex;flex-direction:column;border-radius:10px;border:1px solid var(--line);border-top:4px solid var(--sec);background:var(--panel);box-shadow:var(--shadow);min-width:0}
+.box-head{display:flex;align-items:center;gap:10px;padding:10px 14px 0}
+.sec-tag{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--sec)}
+.sec-tag i{width:10px;height:10px;border-radius:3px;background:var(--sec)}
+.piece{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted);padding:1px 8px;border-radius:999px;border:1px solid var(--line-strong)}
+.box-answer{padding:6px 14px 0;font-family:var(--display);font-size:19px;line-height:1.2;font-weight:700;letter-spacing:-.005em;min-height:calc(2 * 1.2em + 6px)}
+.box-answer.is-stale{color:var(--grey)}
+/* the main PC off: always its own line's room, so nothing moves when it shows */
+.stopped{margin:8px 14px 0;height:26px;display:flex;align-items:center}
+.stopped span{display:inline-block;line-height:20px;padding:1px 9px;border-radius:6px;border:1px dashed var(--line-strong);color:var(--grey);font-weight:600;font-size:13px}
+.stopped[hidden]{display:flex;visibility:hidden}
+
+/* the five fixed rows: name, one word, one sentence */
+.rows{display:flex;flex-direction:column;margin-top:6px}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name word" "line line";column-gap:10px;row-gap:2px;padding:8px 14px;border-top:1px solid var(--line)}
+.hrow-name{grid-area:name;font-weight:700;font-size:14px}
+.hrow-word{grid-area:word;align-self:start;font-size:12px;line-height:18px;font-weight:600;padding:1px 8px;border-radius:6px;background:var(--panel2);border:1px solid transparent}
+.hrow-line{grid-area:line;font-size:13.5px;color:var(--fg);min-height:calc(3 * 1.42em)}
+.hrow:first-child .hrow-line{min-height:calc(2 * 1.42em)}
+.hrow.w-stopped .hrow-word{color:var(--amber);background:var(--amber-bg)}
+.hrow.w-unknown .hrow-word{color:var(--grey);background:transparent;border:1px dashed var(--line-strong)}
+.hrow.is-stale .hrow-name,.hrow.is-stale .hrow-line{color:var(--grey)}
+
+.today{padding:8px 14px 12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.today h2{font-size:13px;font-weight:700;color:var(--muted)}
+.today-line{font-size:13.5px}
+#today.is-stale .today-line{color:var(--grey)}
+
+@media (min-width:1000px) and (min-height:640px){
+  html,body{overflow:hidden}
+  .mc{height:100%;min-height:0}
+  .top{flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
+  .wordmark{height:20px}
+  .product{font-size:16px;padding-left:12px}
+  .fresh{font-size:13px}
+  .body{flex:1 1 auto;min-height:0;display:flex;justify-content:center;align-items:flex-start}
+  .box{width:min(1100px,100%)}
+  .box-head{padding:12px 18px 0}
+  .box-answer{padding:8px 18px 0;font-size:25px;line-height:1.12;letter-spacing:-.015em;min-height:0}
+  .stopped{margin:8px 18px 0}
+  .hrow{grid-template-columns:200px 104px minmax(0,1fr);grid-template-areas:"name word line";column-gap:16px;padding:11px 18px;align-items:start}
+  .hrow-name{font-size:14.5px}
+  .hrow-word{justify-self:start}
+  .hrow-line{font-size:14px;min-height:calc(2 * 1.42em)}
+  .hrow:first-child .hrow-line{min-height:1.42em}
+  .today{padding:10px 18px 14px}
+  .today-line{font-size:14px}
+}
+/* the sign-in: only this shows until he is signed in */
+.signin{display:flex;flex-direction:column;gap:12px;max-width:420px;width:100%;margin:8px auto 0;padding:16px;
+  border-radius:10px;border:1px solid var(--line);border-top:4px solid var(--sec);background:var(--panel);box-shadow:var(--shadow)}
+.signin[hidden]{display:none}
+.signin h1{font-family:var(--display);font-size:19px;line-height:1.25;font-weight:700}
+.signin form{display:flex;flex-direction:column;gap:8px}
+.signin form[hidden]{display:none}
+.signin label{font-weight:600;font-size:14px}
+.signin input{font:inherit;font-size:17px;padding:10px 12px;border-radius:8px;border:1px solid var(--line-strong);background:var(--panel);color:var(--fg);min-height:44px}
+.signin button{font:inherit;font-size:16px;font-weight:600;min-height:44px;border-radius:8px;border:1px solid var(--sec);background:var(--sec);color:#fff;cursor:pointer}
+.signin button.plain{background:transparent;color:var(--sec)}
+.signin button:disabled{opacity:.6;cursor:default}
+.signin-said{min-height:1.42em;color:var(--muted)}
+.signin-said.is-bad{color:var(--amber)}
+.body[hidden],.fresh[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<body data-ready="0">
+<div class="mc">
+  <header class="top">
+    <div class="brand"><svg class="wordmark" viewBox="0 0 3911.94 768.3" role="img" aria-label="VynTel"><path fill-rule="evenodd" d="M44 44L264.42 44L332.44 143.31L400.46 44L620.61 44L346.44 444.28L318.18 444.28ZM546.27 204.03L708.58 204.03L708.58 377.63L631.02 377.63L631.02 724.3L545.72 724.3L476.29 622.93L476.29 377.63L427.43 377.63L454.88 337.55ZM44.09 537.34L122.01 537.34L186.03 630.81L122 724.3L44.09 724.3L108.12 630.82ZM217.63 662.59L458.44 662.59L500.71 724.3L217.63 724.3ZM1048.73 173.1L1285.89 173.1L1359.08 279.96L1432.27 173.1L1669.14 173.1L1374.14 603.79L1343.74 603.79ZM1634.3 302.52L1836.13 302.52L1941.57 456.46L2047.01 302.52L2248.84 302.52L1959.94 724.3L1758.11 724.3L1840.65 603.79ZM2340.3 603.79L2506.81 603.79L2506.81 489L2607.02 489L2607.02 603.79L2773.54 603.79L2773.54 302.52L2340.3 302.52ZM2835.34 44L3168.73 44L3168.73 230.79L3085.27 230.79L3085.27 603.79L2993.5 603.79L2918.79 494.72L2918.79 230.79L2707.4 230.79ZM3171.35 603.79L3604.59 603.79L3568.23 550.71L3337.87 550.71L3337.87 479.7L3604.59 479.7L3604.59 302.52L3171.35 302.52ZM3337.87 426.62L3496.99 426.62L3496.99 355.6L3337.87 355.6ZM3701.43 494.72L3776.13 603.79L3867.94 603.79L3867.94 44L3701.43 44Z"/></svg><span class="product">Mission Control</span></div>
+    <span class="fresh"><i aria-hidden="true"></i><span id="fresh" data-line></span></span>
+  </header>
+  <section id="signin" class="signin s-work" aria-labelledby="signin-h" hidden>
+    <h1 id="signin-h" data-line>Sign in to see how the work stands.</h1>
+    <form id="signin-email" novalidate>
+      <label for="email" data-line>Your email</label>
+      <input id="email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required>
+      <button type="submit" data-line>Send the code</button>
+    </form>
+    <form id="signin-code" novalidate hidden>
+      <label for="code" data-line>The 8-digit code from the email</label>
+      <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" maxlength="8" required>
+      <button type="submit" data-line>Sign in</button>
+      <button type="button" id="signin-again" class="plain" data-line>Use another email</button>
+    </form>
+    <p id="signin-said" class="signin-said" data-line aria-live="polite"></p>
+  </section>
+  <main class="body" id="body">
+    <section id="box" class="box s-work" aria-labelledby="health-h">
+      <div class="box-head"><h1 id="health-h" class="sec-tag"><i aria-hidden="true"></i><span data-line>Health</span></h1><span id="label" class="piece" data-line>First piece</span></div>
+      <p id="answer" class="box-answer" data-line aria-live="polite"></p>
+      <p id="stopped" class="stopped" hidden><span data-line></span></p>
+      <div class="rows" id="rows"></div>
+      <div class="today"><h2 data-line>Today's test runs</h2><div id="today"></div></div>
+    </section>
+  </main>
+</div>
+<script>
+"use strict";
+// Never inside another page's frame: a page that framed it could lay its own boxes over the sign-in.
+if (window.top !== window.self) { document.documentElement.style.display = "none"; throw new Error("Mission Control is not shown inside another page"); }
+// The page's clock is the main PC's. The phone's or laptop's own clock is used as it is unless it is more than a
+// minute off the PC's (said by each answer's served_at); then the PC's is used, so a reading never greys or holds by
+// a wrong clock. Only the replay day's server lets a check hold the clock with ?at=<time>.
+const AT = new URLSearchParams(location.search).get("at");
+const SHIFT = AT && !isNaN(Date.parse(AT)) ? Date.parse(AT) - Date.now() : 0;
+const SKEW_MS = 60000;
+let replay = false, skew = 0;
+const now = () => Date.now() + (replay ? SHIFT : skew);
+const QUIET_MS = 180000;                   // mission/health.py STOPPED_AFTER_S
+// mission/health.py's own sentences for a page with no reading of its own (check_mission_health holds them the same)
+const UNREAD_NOTHING = "The main PC is on, but Mission Control could not read how things stand.";
+const READING = "Reading how things stand.";
+const NOT_ANSWERING = "Stopped: the main PC is not answering, and this device has no reading kept.";
+const NOTHING_READ = "Nothing read yet.";
+const UNREACHABLE = "This device cannot reach Mission Control since {}. This is not the main PC.";
+const UNREACHABLE_NOTHING = "This device cannot reach Mission Control. This is not the main PC.";
+// The document's own times in its sentences, worded again online from the database's clock (mission/health.py).
+const FRESH_AT = "Up to date at {}";
+const STALE_AT = "Not heard from since {}.";
+const UNREAD_AT = "The main PC is on, but Mission Control could not read how things stand since {}.";
+const NO_WORD_AT = "No word from the main PC since {}: it is off, or it cannot reach the database.";
+const REFUSED_REPORT = "The main PC is on, but the database refused its last report (since {}).";
+const NO_ROW = "This sign-in cannot see the Health row.";
+const READ_REFUSED = "Mission Control's database refused this read. This is not the main PC.";
+const NAMES = ["The test runner", "The newest work", "Builds reaching PCs", "The database", "Shop PCs"];
+// The Health document; when the main PC last answered this page (on the page's clock); what it said of its reading.
+let doc = null, answered = null, reading = null;
+// Online: the database's time at this device's last good read of it; how its newest read ended ("ok",
+// "unreachable": no connection or the database busy or down, "norow": no row for this sign-in, "refused"); and the
+// database's clock less the main PC's at its last write (beat_at - pc_time), to judge the PC's own times by; and
+// whether the database refused the main PC's last document (doc_refused: its heartbeat went up alone).
+let reached = null, failing = false, readState = "ok", pcShift = 0, docRefused = false;
+
+// The time as the Health document's own sentences write it (mission/health.py when()), at its offset from UTC.
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function whenAt(ms, t, off) {
+  const at = x => new Date(x + off * 60000), d = at(ms), h = d.getUTCHours();
+  const clock = (h % 12 || 12) + ":" + String(d.getUTCMinutes()).padStart(2, "0") + (h < 12 ? " AM" : " PM");
+  const day = x => Math.floor((x + off * 60000) / 86400000);
+  return day(ms) >= day(t) ? clock : d.getUTCDate() + " " + MONTHS[d.getUTCMonth()] + ", " + clock;
+}
+
+function view(d, heard, a, rd, online, rc, shift, rs, dr) {   // the same pick as mission/health.py shown()
+  const t = heard - (shift || 0);            // the document's times are the main PC's clock: judged on the database's
+  // online every "since" is the document's time on the database's clock, never later than now
+  const since = whenAt(Math.min(Date.parse(d.read_at) + (shift || 0), heard), heard, d.utc_offset_min || 0);
+  const pick = (two, at) => online && at ? at.replace("{}", since) : t < Date.parse(d.day_ends) ? two.today : two.other_day;
+  const old = t >= Date.parse(d.stopped_after);
+  const on = a != null && heard - a < QUIET_MS; // it answers, but its reading is old: the reader failed, the PC is on
+  const rows = d.rows.map(r => { const stale = old || t >= Date.parse(r.fresh_until);
+    return {name: r.name, word: stale ? "Not known" : r.word, line: stale ? pick(d.stale, STALE_AT) : r.line, stale}; });
+  const todayStale = old || t >= Date.parse(d.today_fresh_until);
+  const today = !todayStale || t < Date.parse(d.day_ends) ? d.today : [pick(d.stale, STALE_AT)];
+  const unread = online && dr ? REFUSED_REPORT.replace("{}", since) : pick(d.unread, UNREAD_AT);
+  let notice = on && rd === "first" ? READING : old ? (on ? unread : pick(online && d.no_word ? d.no_word : d.stopped, NO_WORD_AT)) : null;
+  if (online && rc != null && heard - rc >= QUIET_MS) notice = UNREACHABLE.replace("{}", whenAt(rc, heard, d.utc_offset_min || 0));
+  if (online && (rs === "norow" || rs === "refused")) notice = rs === "norow" ? NO_ROW : READ_REFUSED;
+  return {stopped: notice, answer: t < Date.parse(d.day_ends) ? d.answer : d.answer_other_day, answerStale: rows[0].stale,
+          rows, today, todayStale, label: d.label,
+          fresh: rows.slice(0, 4).some(r => r.stale) ? pick(d.stale, STALE_AT) : online ? FRESH_AT.replace("{}", since) : d.fresh};
+}
+
+function row(i) {
+  let el = document.getElementById("hrow-" + i);
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "hrow"; el.id = "hrow-" + i;
+    el.innerHTML = '<span class="hrow-name" data-line></span><span class="hrow-word" data-line></span><span class="hrow-line" data-line></span>';
+    document.getElementById("rows").appendChild(el);
+  }
+  return el;
+}
+
+function set(el, text) { if (el.textContent !== text) el.textContent = text; }
+
+function notice(text) {
+  const stopped = document.getElementById("stopped");
+  set(stopped.firstElementChild, text || ""); stopped.hidden = !text;
+}
+
+function draw() {
+  if (!doc) {                              // no reading at all: what the main PC said, or that it does not answer
+    const on = answered != null && now() - answered < QUIET_MS;
+    // online, a read that failed is the phone not reaching the database: nothing is known of the PC
+    const online = ONLINE && {unreachable: UNREACHABLE_NOTHING, norow: NO_ROW, refused: READ_REFUSED}[readState];
+    notice(online || (!on ? NOT_ANSWERING : reading === "first" ? READING : UNREAD_NOTHING));
+    set(document.getElementById("fresh"), ""); set(document.getElementById("answer"), "");
+    NAMES.forEach((n, i) => { const el = row(i); set(el.children[0], n); set(el.children[1], "Not known");
+      set(el.children[2], NOTHING_READ); el.className = "hrow w-unknown is-stale"; });
+    document.body.dataset.ready = "1";
+    return;
+  }
+  const v = view(doc, now(), answered, reading, !!ONLINE, ONLINE && failing ? reached : null, ONLINE ? pcShift : 0,
+                 ONLINE ? readState : "ok", ONLINE && docRefused);
+  set(document.getElementById("fresh"), v.fresh);
+  set(document.getElementById("label"), v.label);
+  const answer = document.getElementById("answer");
+  set(answer, v.answer); answer.classList.toggle("is-stale", v.answerStale);
+  notice(v.stopped);
+  v.rows.forEach((r, i) => {
+    const el = row(i);
+    set(el.children[0], r.name); set(el.children[1], r.word); set(el.children[2], r.line);
+    el.className = "hrow" + (r.word === "Stopped" ? " w-stopped" : r.word === "Not known" ? " w-unknown" : "") + (r.stale ? " is-stale" : "");
+  });
+  const today = document.getElementById("today");
+  v.today.forEach((line, i) => { let p = today.children[i];
+    if (!p) { p = document.createElement("p"); p.className = "today-line"; p.setAttribute("data-line", ""); today.appendChild(p); }
+    set(p, line); });
+  while (today.children.length > v.today.length) today.lastChild.remove();
+  today.classList.toggle("is-stale", v.todayStale);
+  document.body.dataset.ready = "1";
+}
+
+async function loadHere() {               // on this PC: the page's own server, mission/serve.py
+  try {
+    const r = await fetch("health.json", {cache: "no-store"});
+    if (r.ok) take(await r.json());
+  } catch (e) { /* no answer: the last reading stays, greying with its age */ }
+  if (!doc) {                              // the copy kept of the last reading: never taken for an answer now
+    try { const kept = JSON.parse(localStorage.getItem("mc-health") || "null");
+      if (kept && kept.health && kept.health.kind === "health") {
+        doc = kept.health;
+        if (answered == null) { replay = kept.replay === true; skew = kept.skew || 0; }   // the clock as last known
+      }
+    } catch (e) {}
+  }
+  draw();
+}
+
+function take(got) {                      // {served_at, replay, reading, health, heartbeat}: the answer now
+  if (!got || !(got.served_at || got.heartbeat)) return;
+  replay = got.replay === true;
+  reading = got.reading || null;
+  const pc = Date.parse(got.served_at);
+  if (!replay && !isNaN(pc)) skew = Math.abs(pc - Date.now()) > SKEW_MS ? pc - Date.now() : 0;
+  // When the main PC last answered, on the page's clock. Online, the heartbeat: the database's own time at the main
+  // PC's last write, kept as it is, so a main PC that went off is seen off; served_at is then the database's time
+  // now, when its answer says it. At home, the answer came now; the replay day's server is the PC at its moment.
+  answered = got.heartbeat ? Date.parse(got.heartbeat) : replay ? pc : now();
+  if (got.health && got.health.kind === "health") {
+    doc = got.health;
+    try { localStorage.setItem("mc-health", JSON.stringify({replay, skew, reached, pcShift, docRefused, health: doc})); } catch (e) {}
+  }
+}
+
+// ---------------------------------------------------------------- online: his database, his sign-in
+// Built for Pages, the page holds the database's address and its publishable key (mc-online) and nothing else. It
+// reads the Health row with his own sign-in: an 8-digit code sent to his email, never making an account; the
+// renewal is kept on the phone, so the phone and each laptop stay signed in. The heartbeat (beat_at) is the
+// database's own time at the main PC's last write: it stands where this PC's server's answer stands at home.
+const ONLINE = (() => { const el = document.getElementById("mc-online");
+  try { const c = el ? JSON.parse(el.textContent) : null; return c && c.url && c.key ? c : null; } catch (e) { return null; } })();
+const SAY = {
+  sending: "Sending the code.",
+  sent: "The code is on its way. Look in your email for it.",
+  offline: "No connection. Try again when this device is back online.",
+  hourly: "Too many codes were sent this hour. Try again in an hour.",
+  wait: "A code was sent a moment ago. Wait a minute, then send again.",
+  waitN: "A code was sent a moment ago. Try again in {} seconds.",
+  tries: "Too many tries from this connection. Try again in a few minutes.",
+  notHim: "That email cannot sign in here.",
+  checking: "Checking the code.",
+  badCode: "That code did not work. Check it, or send a new code.",
+  out: "You were signed out. Sign in again to see how the work stands.",
+  failed: "The sign-in did not answer as expected. Try again in a minute."
+};
+const KEEP_SESSION = "mc-session";
+
+function session() { try { const s = JSON.parse(localStorage.getItem(KEEP_SESSION) || "null");
+  return s && s.access_token && s.refresh_token ? s : null; } catch (e) { return null; } }
+function keepSession(got) {
+  const s = {access_token: got.access_token, refresh_token: got.refresh_token,
+             expires_at: Date.now() + (Number(got.expires_in) || 3600) * 1000};
+  try { localStorage.setItem(KEEP_SESSION, JSON.stringify(s)); } catch (e) {}
+  return s;
+}
+function forget() {                        // signed out: nothing of his is left on this device
+  try { localStorage.removeItem(KEEP_SESSION); localStorage.removeItem("mc-health"); localStorage.removeItem("mc-email"); } catch (e) {}
+  doc = null; answered = null;
+}
+function ask(path, body) {
+  return fetch(ONLINE.url + path, {method: "POST", cache: "no-store",
+    headers: {"apikey": ONLINE.key, "Content-Type": "application/json"}, body: JSON.stringify(body)});
+}
+// A 429 to "send a code": which limit it is. GoTrue (supabase/auth internal/api/mail.go) answers both the minute
+// between two codes and the hour's limit on its mail with over_email_send_rate_limit; only the minute's words say
+// when ("For security purposes, you can only request this after N seconds.", internal/api/errors.go), the hour's say
+// "email rate limit exceeded". Read in both answer shapes (error_code and msg, or code and message). Any other 429 is
+// a limit on this connection's address (over_request_rate_limit, internal/api/middleware.go), not on codes.
+async function codeLimit(r) {
+  let body = {};
+  try { body = await r.json(); } catch (e) {}
+  const code = body.error_code || (typeof body.code === "string" ? body.code : "");
+  const n = Number((/after (\d+) seconds?/.exec(body.msg || body.message || "") || [])[1]);
+  if (n) return SAY.waitN.replace("{}", String(n));
+  return code === "over_email_send_rate_limit" ? SAY.hourly : SAY.tries;
+}
+function said(text, bad) { const el = document.getElementById("signin-said"); set(el, text || ""); el.classList.toggle("is-bad", !!bad); }
+
+function showSignIn(why) {
+  document.getElementById("signin").hidden = false;
+  document.getElementById("body").hidden = true;
+  document.querySelector(".fresh").hidden = true;
+  if (why) said(why, true);
+  document.body.dataset.ready = "1";
+}
+function showHealth() {
+  document.getElementById("signin").hidden = true;
+  document.getElementById("body").hidden = false;
+  document.querySelector(".fresh").hidden = false;
+}
+
+// A renewal: true when a fresh sign-in is kept, false when the database said no (signed out), null with no answer.
+async function renew(s) {
+  let r;
+  try { r = await ask("/auth/v1/token?grant_type=refresh_token", {refresh_token: s.refresh_token}); } catch (e) { return null; }
+  if (r.ok) { keepSession(await r.json()); return true; }
+  if (r.status >= 500 || r.status === 429) return null;
+  const now2 = session();                  // another window of his may have renewed it a moment ago
+  if (now2 && now2.refresh_token !== s.refresh_token) return true;
+  return false;
+}
+function readRow(s) {
+  return fetch(ONLINE.url + "/rest/v1/health_now?pc=eq.main&select=doc,beat_at,db_now,pc_time,doc_refused", {cache: "no-store",
+    headers: {"apikey": ONLINE.key, "Authorization": "Bearer " + s.access_token, "Accept-Profile": "mc"}});
+}
+
+async function loadOnline() {
+  let s = session();
+  if (!s) { forget(); return showSignIn(); }
+  if (Date.now() > s.expires_at - 60000) {
+    const r = await renew(s);
+    if (r === false) { forget(); return showSignIn(SAY.out); }
+    s = session() || s;
+  }
+  showHealth();
+  let res = null;
+  try {
+    res = await readRow(s);
+    if (res.status === 401) {
+      const r = await renew(s);
+      if (r === false) { forget(); return showSignIn(SAY.out); }
+      res = r ? await readRow(session()) : null;
+    }
+  } catch (e) { res = null; }              // no signal: the last reading stays, greying with its age
+  // How the read ended. No answer, or the database busy or down: this device cannot reach it, and its last good read
+  // stays, greying with age. A no from the database, or no row for this sign-in, is said as that: never the PC.
+  readState = !res || res.status === 429 || res.status >= 500 ? "unreachable" : !res.ok ? "refused" : "ok";
+  if (readState === "ok") {
+    try { const rows = await res.json(); const row = Array.isArray(rows) ? rows[0] : null;
+      // served_at: the database's own time now, inside its answer (mc.health_now's db_now), never a header, which a
+      // browser hides across addresses; heartbeat: its time at the main PC's last write, kept as it is
+      if (row && row.beat_at && row.db_now) {
+        reached = Date.parse(row.db_now);
+        pcShift = row.pc_time ? Date.parse(row.beat_at) - Date.parse(row.pc_time) : 0;
+        if (isNaN(pcShift)) pcShift = 0;
+        docRefused = row.doc_refused === true;
+        take({served_at: row.db_now, heartbeat: row.beat_at, replay: false, health: row.doc});
+      } else readState = "norow"; } catch (e) { readState = "unreachable"; }
+  }
+  failing = readState === "unreachable";
+  if (!doc) {                              // the copy kept of the last reading: never taken for an answer now
+    try { const kept = JSON.parse(localStorage.getItem("mc-health") || "null");
+      if (kept && kept.health && kept.health.kind === "health") {
+        doc = kept.health; skew = kept.skew || 0; reached = typeof kept.reached === "number" ? kept.reached : null;
+        pcShift = typeof kept.pcShift === "number" ? kept.pcShift : 0; docRefused = kept.docRefused === true; } } catch (e) {}
+  }
+  draw();
+}
+
+if (ONLINE) {
+  let email = "";
+  const emailForm = document.getElementById("signin-email"), codeForm = document.getElementById("signin-code");
+  try { document.getElementById("email").value = localStorage.getItem("mc-email") || ""; } catch (e) {}
+  emailForm.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    email = document.getElementById("email").value.trim().toLowerCase();
+    if (!email) return;
+    const button = emailForm.querySelector("button"); button.disabled = true; said(SAY.sending);
+    try {
+      const r = await ask("/auth/v1/otp", {email, create_user: false});
+      if (r.ok) {
+        try { localStorage.setItem("mc-email", email); } catch (e) {}
+        emailForm.hidden = true; codeForm.hidden = false; said(SAY.sent);
+        document.getElementById("code").value = ""; document.getElementById("code").focus();
+      } else if (r.status === 429) said(await codeLimit(r), true);
+      else said(r.status === 400 || r.status === 403 || r.status === 422 ? SAY.notHim : SAY.failed, true);
+    } catch (e) { said(SAY.offline, true); }
+    button.disabled = false;
+  });
+  codeForm.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const code = document.getElementById("code").value.replace(/\D/g, "");
+    if (code.length !== 8) return said(SAY.badCode, true);
+    const button = codeForm.querySelector("button"); button.disabled = true; said(SAY.checking);
+    try {
+      const r = await ask("/auth/v1/verify", {type: "email", email, token: code});
+      if (r.ok) {
+        const got = await r.json();
+        if (got.access_token && got.refresh_token) {
+          keepSession(got); said(""); codeForm.hidden = true; emailForm.hidden = false; await loadOnline();
+        } else said(SAY.failed, true);
+      } else said(r.status === 429 ? SAY.wait : r.status >= 500 ? SAY.failed : SAY.badCode, true);
+    } catch (e) { said(SAY.offline, true); }
+    button.disabled = false;
+  });
+  document.getElementById("signin-again").addEventListener("click", () => { codeForm.hidden = true; emailForm.hidden = false; said(""); });
+}
+
+const load = ONLINE ? loadOnline : loadHere;
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+load();
+setInterval(load, 15000);
+setInterval(draw, 5000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+</script>
