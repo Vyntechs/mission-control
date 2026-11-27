@@ -340,19 +340,34 @@ let doc = null, answered = null, reading = null;
 // whether the database refused the main PC's last document (doc_refused: its heartbeat went up alone).
 let reached = null, failing = false, readState = "ok", pcShift = 0, docRefused = false;
 
-// The time as the Health document's own sentences write it (mission/health.py when()), at its offset from UTC.
+// Every time he reads is Central (America/Chicago; owner, 26 Nov), never this phone's or laptop's own zone: each
+// instant at its own date's offset (CST or CDT), and today, this week and before judged on Central's day.
+const ZONE = "America/Chicago";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function whenAt(ms, t, off) {
-  const at = x => new Date(x + off * 60000), d = at(ms), h = d.getUTCHours();
-  const clock = (h % 12 || 12) + ":" + String(d.getUTCMinutes()).padStart(2, "0") + (h < 12 ? " AM" : " PM");
-  const day = x => Math.floor((x + off * 60000) / 86400000);
-  return day(ms) >= day(t) ? clock : d.getUTCDate() + " " + MONTHS[d.getUTCMonth()] + ", " + clock;
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const CENTRAL = new Intl.DateTimeFormat("en-US", {timeZone: ZONE, year: "numeric", month: "numeric", day: "numeric",
+                                                   hour: "numeric", minute: "numeric", hourCycle: "h23"});
+function central(ms) {                     // Central's day as a count; its date, month and weekday; its time of day in words
+  if (!isFinite(ms)) return null;          // a time that cannot be read: said as nothing, never a thread left undrawn
+  const p = {};
+  CENTRAL.formatToParts(new Date(ms)).forEach(x => { p[x.type] = Number(x.value); });
+  const h = p.hour % 24, day = Math.round(Date.UTC(p.year, p.month - 1, p.day) / 86400000);
+  return {day, date: p.day, month: MONTHS[p.month - 1], weekday: WEEKDAYS[(day + 4) % 7],
+          clock: (h % 12 || 12) + ":" + String(p.minute).padStart(2, "0") + (h < 12 ? " AM" : " PM")};
+}
+
+// The time as the Health document's own sentences write it (mission/health.py when()): the time alone on Central's
+// same day as `t`, the date and time on an earlier one.
+function whenAt(ms, t) {
+  const d = central(ms), n = central(t);
+  if (!d || !n) return "";
+  return d.day >= n.day ? d.clock : d.date + " " + d.month + ", " + d.clock;
 }
 
 function view(d, heard, a, rd, online, rc, shift, rs, dr) {   // the same pick as mission/health.py shown()
   const t = heard - (shift || 0);            // the document's times are the main PC's clock: judged on the database's
   // online every "since" is the document's time on the database's clock, never later than now
-  const since = whenAt(Math.min(Date.parse(d.read_at) + (shift || 0), heard), heard, d.utc_offset_min || 0);
+  const since = whenAt(Math.min(Date.parse(d.read_at) + (shift || 0), heard), heard);
   const pick = (two, at) => online && at ? at.replace("{}", since) : t < Date.parse(d.day_ends) ? two.today : two.other_day;
   const old = t >= Date.parse(d.stopped_after);
   const on = a != null && heard - a < QUIET_MS; // it answers, but its reading is old: the reader failed, the PC is on
@@ -365,7 +380,7 @@ function view(d, heard, a, rd, online, rc, shift, rs, dr) {   // the same pick a
   const today = !todayStale || t < Date.parse(d.day_ends) ? d.today : [pick(d.stale, STALE_AT)];
   const unread = online && dr ? REFUSED_REPORT.replace("{}", since) : pick(d.unread, UNREAD_AT);
   let notice = on && rd === "first" ? READING : old ? (on ? unread : pick(online && d.no_word ? d.no_word : d.stopped, NO_WORD_AT)) : null;
-  if (online && rc != null && heard - rc >= QUIET_MS) notice = UNREACHABLE.replace("{}", whenAt(rc, heard, d.utc_offset_min || 0));
+  if (online && rc != null && heard - rc >= QUIET_MS) notice = UNREACHABLE.replace("{}", whenAt(rc, heard));
   if (online && (rs === "norow" || rs === "refused")) notice = rs === "norow" ? NO_ROW : READ_REFUSED;
   return {stopped: notice, answer: t < Date.parse(d.day_ends) ? d.answer : d.answer_other_day, answerStale: rows[0].stale,
           rows, plans, today, todayStale, label: d.label,
@@ -864,12 +879,11 @@ async function readThread() {
   drawThread(ok ? null : threadAt);
 }
 
-function clock(iso) {                      // the time alone today; the weekday and time this week; the date and time before
-  const d = new Date(iso), t = new Date(Date.now()), h = d.getHours();
-  const c = (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + (h < 12 ? " AM" : " PM");
-  const days = Math.round((new Date(t.toDateString()) - new Date(d.toDateString())) / 86400000);
-  return days <= 0 ? c : days < 7 ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()] + " " + c
-       : d.getDate() + " " + MONTHS[d.getMonth()] + ", " + c;
+function clock(iso, t = Date.now()) {      // the time alone today; the weekday and time this week; the date and time before (Central's days)
+  const d = central(Date.parse(iso)), n = central(t);
+  if (!d || !n) return "";
+  const days = n.day - d.day;
+  return days <= 0 ? d.clock : days < 7 ? d.weekday + " " + d.clock : d.date + " " + d.month + ", " + d.clock;
 }
 
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
