@@ -34,13 +34,15 @@
   --shadow:0 1px 2px rgba(17,20,24,.05),0 4px 16px rgba(17,20,24,.05);
   --font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"SF Pro Text",Roboto,"Helvetica Neue",Arial,sans-serif;
   --display:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"SF Pro Display",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --gut:12px;                 /* the page's side margin: 12px on a phone, so each row's sentence has the width it needs */
   /* the type scale */
   --t-meta:12px;--t-small:13px;--t-body:14px;--t-lead:15px;--t-field:16px;--t-head:18px;--t-head-wide:24px;
   /* the spacing: steps of 4 */
   --g1:4px;--g2:8px;--g3:12px;--g4:16px;--g6:24px;
   --chip-h:20px;
-  /* the box's sides: 16 px, or the notch's room when the phone lies on its side */
-  --pad-l:max(16px, env(safe-area-inset-left, 0px));--pad-r:max(16px, env(safe-area-inset-right, 0px));
+  /* the box's sides on a phone: the box runs edge to edge (the look) and its words keep the column the box fit
+     measured (the page's margin, the old box's edge and its padding: 12 + 1 + 12), or the notch's room */
+  --pad-l:max(calc(2 * var(--gut) + 1px), env(safe-area-inset-left, 0px));--pad-r:max(calc(2 * var(--gut) + 1px), env(safe-area-inset-right, 0px));
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){:root{
@@ -77,7 +79,8 @@ svg{flex:none}
 .sec-tag{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-small);line-height:20px;font-weight:700;letter-spacing:.01em;color:var(--sec)}
 .sec-tag i{width:10px;height:10px;border-radius:2px;background:var(--sec)}
 .piece{margin-left:auto;font-size:var(--t-meta);line-height:20px;font-weight:600;color:var(--muted)}
-.box-answer{padding:var(--g1) var(--pad-r) 0 var(--pad-l);font-family:var(--display);font-size:var(--t-head);line-height:24px;font-weight:650;letter-spacing:-.01em;min-height:calc(2 * 24px + 4px)}
+/* three lines' room on a phone: this day's own bold line takes three (the box fit) */
+.box-answer{padding:var(--g1) var(--pad-r) 0 var(--pad-l);font-family:var(--display);font-size:var(--t-head);line-height:22px;font-weight:650;letter-spacing:-.01em;min-height:calc(3 * 22px + 4px)}
 .box-answer.is-stale{color:var(--grey)}
 /* the main PC off: always its own room, so nothing moves when it shows. The room is two lines on a phone, where the
    longest notice wraps (400 wide: "The main PC is on, but Mission Control could not read how things stand since" and
@@ -87,13 +90,21 @@ svg{flex:none}
 .stopped span::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;border:1.5px solid currentColor}
 .stopped[hidden]{display:flex;visibility:hidden}
 
-/* the five fixed rows: the name and its word on one line, the sentence under; one hairline between rows */
+/* the fixed rows: the name and its word on one line, the sentence under; one hairline between rows. On a phone the
+   rows are set close (4px above and below, the word's chip 20px, the sentence's lines 1.3 apart at 13.5px, the size the box fit measured: at the look's 13px a heavy day's sentences take two lines of the three kept), so six rows and the box
+   at the foot both fit and nothing scrolls; each sentence keeps its room for three lines (the first row two), so
+   nothing moves when one arrives */
 .rows{display:flex;flex-direction:column;margin-top:var(--g1)}
-.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name word" "line line";column-gap:var(--g3);row-gap:var(--g1);padding:var(--g2) var(--pad-r) var(--g2) var(--pad-l);border-top:1px solid var(--line)}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name word" "line line" "also also";column-gap:var(--g3);row-gap:0;padding:var(--g1) var(--pad-r) var(--g1) var(--pad-l);border-top:1px solid var(--line)}
 .hrow-name{grid-area:name;font-weight:600;font-size:var(--t-body);line-height:var(--chip-h)}
-.hrow-line{grid-area:line;font-size:var(--t-small);line-height:16px;color:var(--fg);min-height:calc(3 * 16px)}
-.hrow:first-child .hrow-line{min-height:calc(2 * 16px)}
-/* the word: plain muted words when all is well; a chip with a dot only where it needs his eye (colours.md) */
+.hrow-line{grid-area:line;font-size:13.5px;line-height:1.3;color:var(--fg);min-height:calc(3 * 1.3em)}
+.hrow:first-child .hrow-line{min-height:calc(2 * 1.3em)}
+/* the plans not in the newest work: a line of its own inside The newest work, its chip inline at its start, two
+   lines' room so nothing moves when it changes (design/plans/mission-control-plans-landed.md). To pay for it on a
+   phone, the Shop PCs row's fixed sentence keeps one line's room, not three, until shop PCs report in */
+.hrow-also{grid-area:also;font-size:13.5px;line-height:1.3;min-height:calc(2 * 1.3em)}
+.hrow.shop .hrow-line{min-height:1.3em}
+/* the word: plain muted words when all is well (OK); a chip with a dot only where it needs his eye (colours.md) */
 .hrow-word{grid-area:word;align-self:start;display:inline-flex;align-items:center;gap:6px;height:var(--chip-h);
   font-size:var(--t-meta);font-weight:600;line-height:1;padding:0;border-radius:6px;border:1px solid transparent;white-space:nowrap;color:var(--muted)}
 .hrow-word::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;display:none}
@@ -103,17 +114,26 @@ svg{flex:none}
 .hrow.w-stopped .hrow-word::before,.hrow.w-late .hrow-word::before{display:block;background:currentColor}
 .hrow.w-unknown .hrow-word::before{display:block;width:6px;height:6px;border:1.5px solid currentColor}
 .hrow.is-stale .hrow-name,.hrow.is-stale .hrow-line{color:var(--grey)}
+/* the plans line's chip is its own, whatever its row's word (after the row's, and more particular, so a Stopped row
+   never draws it red and a Not known row never greys a fresh one) */
+.hrow .hrow-also .hrow-word{display:inline-flex;height:16px;margin-right:6px;padding:0 7px;vertical-align:top;color:var(--fg);background:var(--panel2);border:1px solid transparent}
+.hrow .hrow-also.w-late .hrow-word{color:var(--amber);background:var(--amber-bg)}
+.hrow .hrow-also.w-unknown .hrow-word{color:var(--grey);background:transparent;border:1px dashed var(--line-strong)}
+.hrow .hrow-also.w-late .hrow-word::before{display:block;background:currentColor}
+.hrow .hrow-also.w-unknown .hrow-word::before{display:block;width:6px;height:6px;border:1.5px solid currentColor}
+.hrow .hrow-also:not(.w-late):not(.w-unknown) .hrow-word::before{display:none}
+.hrow .hrow-also.is-stale .also-line{color:var(--grey)}
 
-/* today's test runs: a footer band, its name run in to the first line */
-.today{padding:var(--g2) var(--pad-r) var(--g2) var(--pad-l);border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel2);display:block;line-height:16px}
-.today h2{display:inline;font-size:var(--t-small);line-height:16px;font-weight:700;color:var(--fg);margin-right:var(--g1)}
-.today h2::after{content:":"}
-#today{display:contents}
+/* today's test runs: a footer band */
+.today{padding:var(--g2) var(--pad-r) var(--g2) var(--pad-l);border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel2);display:flex;flex-direction:column;gap:0}
+.today h2{font-size:var(--t-small);line-height:16px;font-weight:700;color:var(--fg)}
+.today-open{all:unset;display:flex;align-items:center;gap:6px;width:100%;box-sizing:border-box}
+.today-open svg{display:none;width:16px;height:16px;margin-left:auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .today-line{font-size:var(--t-small);line-height:16px;color:var(--fg)}
-.today-line:first-child{display:inline}
 #today.is-stale .today-line{color:var(--grey)}
 
 @media (min-width:1000px) and (min-height:640px){
+  :root{--gut:16px}
   html,body{overflow:hidden}
   .mc{height:100%;min-height:0;gap:var(--g6)}
   /* the top bar's ends line up with the box below */
@@ -125,16 +145,18 @@ svg{flex:none}
   .body{flex:1 1 auto;min-height:0;display:flex;justify-content:center;align-items:flex-start;padding:0 var(--g6)}
   .box{width:min(1120px,100%);border-radius:12px;border:1px solid var(--line);border-top:4px solid var(--sec);box-shadow:var(--shadow);overflow:hidden}
   .box-head{height:36px;padding:var(--g4) var(--g6) 0}
-  .box-answer{padding:var(--g2) var(--g6) 0;font-size:var(--t-head-wide);line-height:28px;letter-spacing:-.015em;min-height:calc(2 * 28px + 8px)}
+  .box-answer{padding:var(--g2) var(--g6) 0;font-size:var(--t-head-wide);line-height:28px;letter-spacing:-.015em;min-height:0}
   .stopped{margin:var(--g2) var(--g6) 0;height:28px}
   .stopped span{font-size:var(--t-small);line-height:20px}
   .rows{margin-top:var(--g2)}
-  .hrow{grid-template-columns:220px 128px minmax(0,1fr);grid-template-areas:"name word line";column-gap:var(--g4);row-gap:0;padding:var(--g3) var(--g6);align-items:start}
+  .hrow{grid-template-columns:220px 128px minmax(0,1fr);grid-template-areas:"name word line" ". . also";column-gap:var(--g4);row-gap:0;padding:var(--g3) var(--g6);align-items:start}
   .hrow-name{font-size:var(--t-lead);line-height:24px}
   .hrow-word{justify-self:start;margin-top:2px}
   .hrow-line{font-size:var(--t-body);line-height:24px;min-height:calc(2 * 24px)}
-  .hrow:first-child .hrow-line{min-height:calc(2 * 24px)}
-  .today{padding:var(--g3) var(--g6) var(--g4);border-bottom:0;line-height:24px}
+  .hrow:first-child .hrow-line{min-height:24px}
+  .hrow.shop .hrow-line{min-height:calc(2 * 24px)}
+  .hrow-also{font-size:var(--t-body);line-height:24px;min-height:calc(2 * 24px)}
+  .today{padding:var(--g3) var(--g6) var(--g4);border-bottom:0}
   .today h2,.today-line{font-size:var(--t-body);line-height:24px}
 }
 /* the sign-in: only this shows until he is signed in. What he presses is ink (colours.md) */
@@ -153,6 +175,83 @@ svg{flex:none}
 .signin-said{min-height:20px;color:var(--muted)}
 .signin-said.is-bad{color:var(--amber)}
 .body[hidden],.fresh[hidden]{display:none!important}
+
+/* the box (design/plans/mission-control-box.md): on a phone fixed at the foot, above the home bar and the keyboard;
+   on a laptop in the top bar. Everything pressed is ink (colours.md); no colour of its own. */
+.asker{position:fixed;z-index:20;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:4px;
+  padding:6px max(12px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  background:var(--bar);border-top:1px solid var(--bar-line);color:var(--bar-fg)}
+.asker[hidden]{display:none}
+.ask-said{height:18px;font-size:13px;line-height:18px;color:var(--bar-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ask-said.is-bad{color:var(--amber)}
+.ask{display:flex;align-items:center;gap:6px;min-width:0}
+.ask input{flex:1 1 auto;min-width:0;height:44px;border-radius:8px;border:1px solid var(--line-strong);background:var(--panel);color:var(--fg);padding:0 12px;font:inherit;font-size:16px}
+.ask button{height:44px;min-width:44px;border-radius:8px;font:inherit;font-size:15px;font-weight:600;cursor:pointer;flex:none}
+.ask-mic,.ask-thread{border:1px solid transparent;background:transparent;color:var(--fg);display:grid;place-items:center;padding:0}
+.ask-mic svg,.ask-thread svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ask-thread span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ask-send{border:1px solid var(--fg);background:var(--fg);color:var(--bg);padding:0 14px}
+.ask-send:disabled{opacity:.35;cursor:default}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* the page ends 4px above the box at the foot: the box is 81px high (its line 18, the field 44, 6 and 8 around, the
+   edge 1) above the home bar */
+body.has-box .mc{padding-bottom:calc(85px + env(safe-area-inset-bottom, 0px))}
+/* with the box at the foot of a phone, today's test runs fold to their one line, which opens and closes them: the
+   room the box takes is the room they gave up, so the rows above end over the box and nothing scrolls */
+body.has-box .today{padding-block:0}
+body.has-box .today-open{min-height:44px;cursor:pointer}
+body.has-box .today-open svg{display:block}
+body.has-box .today.is-open .today-open svg{transform:rotate(180deg)}
+body.has-box .today-open:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:6px}
+body.has-box .today:not(.is-open) #today{display:none}
+body.has-box .today.is-open #today{padding-bottom:8px}
+.signin-kept{color:var(--muted)}
+.signin-kept[hidden]{display:none}
+
+/* his thread: a drawer over the content; only it scrolls. Its edge is ink: it is his, not a section's. */
+.thread{position:fixed;z-index:30;left:0;right:0;top:0;bottom:var(--asker-h, 0px);display:flex;flex-direction:column;
+  background:var(--panel);border-top:4px solid var(--fg);padding-top:env(safe-area-inset-top, 0px)}
+.thread[hidden]{display:none}
+.thread-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);touch-action:none}
+.thread-head h2{font-family:var(--display);font-size:17px;font-weight:700;margin:0}
+.thread-close{margin-left:auto;height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-strong);background:transparent;color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+.thread-search{padding:8px 14px 0}
+.thread-search input{width:100%;height:40px;border-radius:8px;border:1px solid var(--line-strong);background:var(--panel);color:var(--fg);padding:0 12px;font:inherit;font-size:16px}
+.thread-said{min-height:18px;padding:6px 14px 0;font-size:13px;line-height:18px;color:var(--muted)}
+.thread-list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0;padding:6px 14px 14px;list-style:none}
+.thread-older{display:block;margin:4px auto 8px;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line-strong);background:transparent;color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+.thread-older[hidden]{display:none}
+.msg{padding:10px 0;border-top:1px solid var(--line)}
+.msg:first-child{border-top:none}
+.msg-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.msg-time{font-size:12.5px;color:var(--muted)}
+.tag{font-size:12px;line-height:18px;font-weight:600;padding:1px 8px;border-radius:6px;background:var(--panel2);border:1px solid transparent}
+.tag.t-unsent{color:var(--grey);background:transparent;border:1px dashed var(--line-strong)}
+.tag.t-refused{color:var(--amber);background:var(--amber-bg)}
+.msg-words{margin:4px 0 0;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg-again{margin-top:6px;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--fg);background:transparent;color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+.ans{margin:8px 0 0 14px;padding-left:10px;border-left:2px solid var(--line-strong)}
+.ans-head{font-size:12.5px;color:var(--muted)}
+.ans-head b{color:var(--fg);font-weight:700;margin-right:6px}
+.ans p{margin:2px 0 0;font-size:14.5px;overflow-wrap:anywhere}
+.thread-empty{color:var(--muted);padding:10px 0}
+
+@media (min-width:1000px) and (min-height:640px){
+  .asker{position:static;flex:1 1 auto;max-width:760px;margin:0 auto;padding:0;background:transparent;border:none;gap:2px}
+  .ask-said{order:2;height:16px;font-size:12.5px;line-height:16px}
+  .ask input{height:40px;font-size:14.5px}
+  .ask button{height:40px;font-size:14px}
+  .ask-thread{width:auto;padding:0 12px;border-color:var(--line-strong);gap:6px;grid-auto-flow:column}
+  .ask-thread span{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+  .ask-thread svg{width:18px;height:18px}
+  body.has-box .mc{padding-bottom:max(12px, env(safe-area-inset-bottom, 0px))}
+  body.has-box .today{padding:var(--g3) var(--g6) var(--g4)}
+  body.has-box .today-open{min-height:0;cursor:default}
+  body.has-box .today-open svg{display:none}
+  body.has-box .today:not(.is-open) #today{display:block}
+  body.has-box .today.is-open #today{padding-bottom:0}
+  .thread{left:auto;width:min(480px,100%);top:var(--top-h, 64px);bottom:0;border-top:none;border-left:4px solid var(--fg);box-shadow:var(--shadow)}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 <body data-ready="0">
@@ -160,6 +259,16 @@ svg{flex:none}
   <header class="top">
     <div class="brand"><svg class="wordmark" viewBox="0 0 3911.94 768.3" role="img" aria-label="VynTel"><path fill-rule="evenodd" d="M44 44L264.42 44L332.44 143.31L400.46 44L620.61 44L346.44 444.28L318.18 444.28ZM546.27 204.03L708.58 204.03L708.58 377.63L631.02 377.63L631.02 724.3L545.72 724.3L476.29 622.93L476.29 377.63L427.43 377.63L454.88 337.55ZM44.09 537.34L122.01 537.34L186.03 630.81L122 724.3L44.09 724.3L108.12 630.82ZM217.63 662.59L458.44 662.59L500.71 724.3L217.63 724.3ZM1048.73 173.1L1285.89 173.1L1359.08 279.96L1432.27 173.1L1669.14 173.1L1374.14 603.79L1343.74 603.79ZM1634.3 302.52L1836.13 302.52L1941.57 456.46L2047.01 302.52L2248.84 302.52L1959.94 724.3L1758.11 724.3L1840.65 603.79ZM2340.3 603.79L2506.81 603.79L2506.81 489L2607.02 489L2607.02 603.79L2773.54 603.79L2773.54 302.52L2340.3 302.52ZM2835.34 44L3168.73 44L3168.73 230.79L3085.27 230.79L3085.27 603.79L2993.5 603.79L2918.79 494.72L2918.79 230.79L2707.4 230.79ZM3171.35 603.79L3604.59 603.79L3568.23 550.71L3337.87 550.71L3337.87 479.7L3604.59 479.7L3604.59 302.52L3171.35 302.52ZM3337.87 426.62L3496.99 426.62L3496.99 355.6L3337.87 355.6ZM3701.43 494.72L3776.13 603.79L3867.94 603.79L3867.94 44L3701.43 44Z"/></svg><span class="product">Mission Control</span></div>
     <span class="fresh"><i aria-hidden="true"></i><span id="fresh" data-line></span></span>
+    <div id="asker" class="asker" hidden>
+      <p id="ask-said" class="ask-said" aria-live="polite"></p>
+      <form id="ask" class="ask" autocomplete="off" novalidate>
+        <button type="button" class="ask-mic" id="ask-mic" aria-label="Say it"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
+        <label class="sr" for="ask-input" data-line>Tell it or ask it anything</label>
+        <input id="ask-input" type="text" placeholder="Tell it or ask it anything" enterkeyhint="send" autocapitalize="sentences">
+        <button type="submit" class="ask-send" id="ask-send" disabled data-line>Send</button>
+        <button type="button" class="ask-thread" id="ask-thread" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><span data-line>Your messages</span></button>
+      </form>
+    </div>
   </header>
   <section id="signin" class="signin s-work" aria-labelledby="signin-h" hidden>
     <h1 id="signin-h" data-line>Sign in to see how the work stands.</h1>
@@ -175,6 +284,7 @@ svg{flex:none}
       <button type="button" id="signin-again" class="plain" data-line>Use another email</button>
     </form>
     <p id="signin-said" class="signin-said" data-line aria-live="polite"></p>
+    <p id="signin-kept" class="signin-kept" hidden></p>
   </section>
   <main class="body" id="body">
     <section id="box" class="box s-work" aria-labelledby="health-h">
@@ -182,10 +292,16 @@ svg{flex:none}
       <p id="answer" class="box-answer" data-line aria-live="polite"></p>
       <p id="stopped" class="stopped" hidden><span data-line></span></p>
       <div class="rows" id="rows"></div>
-      <div class="today"><h2 data-line>Today's test runs</h2><div id="today"></div></div>
+      <div class="today" id="today-part"><h2><button type="button" class="today-open" id="today-open" aria-controls="today"><span data-line>Today's test runs</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="today"></div></div>
     </section>
   </main>
 </div>
+<section id="thread" class="thread" role="dialog" aria-modal="true" aria-labelledby="thread-h" hidden>
+  <div class="thread-head" id="thread-head"><h2 id="thread-h" data-line>Your messages</h2><button type="button" class="thread-close" id="thread-close" data-line>Close</button></div>
+  <div class="thread-search"><label class="sr" for="thread-find" data-line>Search your messages</label><input id="thread-find" type="search" placeholder="Search your messages" enterkeyhint="search" autocomplete="off"></div>
+  <p id="thread-said" class="thread-said" aria-live="polite"></p>
+  <ul id="thread-list" class="thread-list"></ul>
+</section>
 <script>
 "use strict";
 // Never inside another page's frame: a page that framed it could lay its own boxes over the sign-in.
@@ -202,7 +318,7 @@ const QUIET_MS = 180000;                   // mission/health.py STOPPED_AFTER_S
 // mission/health.py's own sentences for a page with no reading of its own (check_mission_health holds them the same)
 const UNREAD_NOTHING = "The main PC is on, but Mission Control could not read how things stand.";
 const READING = "Reading how things stand.";
-const NOT_ANSWERING = "Stopped: the main PC is not answering, and this device has no reading kept.";
+const NOT_ANSWERING = "The main PC is not answering now, and this device has no reading kept.";
 const NOTHING_READ = "Nothing read yet.";
 const UNREACHABLE = "This device cannot reach Mission Control since {}. This is not the main PC.";
 const UNREACHABLE_NOTHING = "This device cannot reach Mission Control. This is not the main PC.";
@@ -214,7 +330,8 @@ const NO_WORD_AT = "No word from the main PC since {}: it is off, or it cannot r
 const REFUSED_REPORT = "The main PC is on, but the database refused its last report (since {}).";
 const NO_ROW = "This sign-in cannot see the Health row.";
 const READ_REFUSED = "Mission Control's database refused this read. This is not the main PC.";
-const NAMES = ["The test runner", "The newest work", "Builds reaching PCs", "The database", "Shop PCs"];
+const PLANS_IN = "The newest work";     // mission/health.py PLANS_IN: the row the plans line sits in
+const NAMES = ["The test runner", "The newest work", "Builds reaching PCs", "The database", "Test copies of the database", "Shop PCs"];
 // The Health document; when the main PC last answered this page (on the page's clock); what it said of its reading.
 let doc = null, answered = null, reading = null;
 // Online: the database's time at this device's last good read of it; how its newest read ended ("ok",
@@ -241,6 +358,9 @@ function view(d, heard, a, rd, online, rc, shift, rs, dr) {   // the same pick a
   const on = a != null && heard - a < QUIET_MS; // it answers, but its reading is old: the reader failed, the PC is on
   const rows = d.rows.map(r => { const stale = old || t >= Date.parse(r.fresh_until);
     return {name: r.name, word: stale ? "Not known" : r.word, line: stale ? pick(d.stale, STALE_AT) : r.line, stale}; });
+  const p = d.plans && typeof d.plans === "object" ? d.plans : null;
+  const pStale = p ? old || !(t < Date.parse(p.fresh_until)) : false;   // no fresh moment: stale, as shown()
+  const plans = p ? {in: p.in, word: pStale ? "Not known" : p.word, line: pStale ? pick(d.stale, STALE_AT) : p.line, stale: pStale} : null;
   const todayStale = old || t >= Date.parse(d.today_fresh_until);
   const today = !todayStale || t < Date.parse(d.day_ends) ? d.today : [pick(d.stale, STALE_AT)];
   const unread = online && dr ? REFUSED_REPORT.replace("{}", since) : pick(d.unread, UNREAD_AT);
@@ -248,7 +368,7 @@ function view(d, heard, a, rd, online, rc, shift, rs, dr) {   // the same pick a
   if (online && rc != null && heard - rc >= QUIET_MS) notice = UNREACHABLE.replace("{}", whenAt(rc, heard, d.utc_offset_min || 0));
   if (online && (rs === "norow" || rs === "refused")) notice = rs === "norow" ? NO_ROW : READ_REFUSED;
   return {stopped: notice, answer: t < Date.parse(d.day_ends) ? d.answer : d.answer_other_day, answerStale: rows[0].stale,
-          rows, today, todayStale, label: d.label,
+          rows, plans, today, todayStale, label: d.label,
           fresh: rows.slice(0, 4).some(r => r.stale) ? pick(d.stale, STALE_AT) : online ? FRESH_AT.replace("{}", since) : d.fresh};
 }
 
@@ -265,6 +385,20 @@ function row(i) {
 
 function set(el, text) { if (el.textContent !== text) el.textContent = text; }
 
+// The plans line inside its row: its room is always there; with no reading, or a document from before it, it is empty.
+function plansLine(p) {
+  const at = NAMES.indexOf(PLANS_IN), el = row(at);
+  let also = el.querySelector(".hrow-also");
+  if (!also) {
+    also = document.createElement("p");
+    also.innerHTML = '<span class="hrow-word" data-line></span><span class="also-line" data-line></span>';
+    el.appendChild(also);
+  }
+  also.className = "hrow-also" + (!p ? "" : p.word === "Not in yet" ? " w-late" : p.word === "Not known" ? " w-unknown" : "") + (p && p.stale ? " is-stale" : "");
+  also.firstElementChild.style.visibility = p ? "" : "hidden";
+  set(also.firstElementChild, p ? p.word : ""); set(also.lastElementChild, p ? p.line : "");
+}
+
 function notice(text) {
   const stopped = document.getElementById("stopped");
   set(stopped.firstElementChild, text || ""); stopped.hidden = !text;
@@ -278,7 +412,8 @@ function draw() {
     notice(online || (!on ? NOT_ANSWERING : reading === "first" ? READING : UNREAD_NOTHING));
     set(document.getElementById("fresh"), ""); set(document.getElementById("answer"), "");
     NAMES.forEach((n, i) => { const el = row(i); set(el.children[0], n); set(el.children[1], "Not known");
-      set(el.children[2], NOTHING_READ); el.className = "hrow w-unknown is-stale"; });
+      set(el.children[2], NOTHING_READ); el.className = "hrow w-unknown is-stale" + (n === "Shop PCs" ? " shop" : ""); });
+    plansLine(null);
     document.body.dataset.ready = "1";
     return;
   }
@@ -292,8 +427,9 @@ function draw() {
   v.rows.forEach((r, i) => {
     const el = row(i);
     set(el.children[0], r.name); set(el.children[1], r.word); set(el.children[2], r.line);
-    el.className = "hrow" + (r.word === "Stopped" ? " w-stopped" : r.word === "Slow" ? " w-late" : r.word === "Not known" ? " w-unknown" : "") + (r.stale ? " is-stale" : "");
+    el.className = "hrow" + (r.word === "Stopped" ? " w-stopped" : r.word === "Not sent yet" ? " w-late" : r.word === "Left running" ? " w-late" : r.word === "Not known" ? " w-unknown" : "") + (r.stale ? " is-stale" : "") + (r.name === "Shop PCs" ? " shop" : "");
   });
+  plansLine(v.plans);
   const today = document.getElementById("today");
   v.today.forEach((line, i) => { let p = today.children[i];
     if (!p) { p = document.createElement("p"); p.className = "today-line"; p.setAttribute("data-line", ""); today.appendChild(p); }
@@ -366,9 +502,11 @@ function keepSession(got) {
   try { localStorage.setItem(KEEP_SESSION, JSON.stringify(s)); } catch (e) {}
   return s;
 }
-function forget() {                        // signed out: nothing of his is left on this device
-  try { localStorage.removeItem(KEEP_SESSION); localStorage.removeItem("mc-health"); localStorage.removeItem("mc-email"); } catch (e) {}
+function forget() {                        // signed out: nothing of his is left here but the messages he sent that the database has not got
+  try { localStorage.removeItem(KEEP_SESSION); localStorage.removeItem("mc-health"); localStorage.removeItem("mc-email"); localStorage.removeItem("mc-thread"); } catch (e) {}
   doc = null; answered = null;
+  if (typeof thread !== "undefined") { thread = {messages: [], answers: []}; threadAt = null; ownerOf = {};
+    $("ask-input").value = ""; $("ask-send").disabled = true; sayBox(""); }   // `unkept` stays in memory for his account only
 }
 function ask(path, body) {
   return fetch(ONLINE.url + path, {method: "POST", cache: "no-store",
@@ -394,12 +532,18 @@ function showSignIn(why) {
   document.getElementById("body").hidden = true;
   document.querySelector(".fresh").hidden = true;
   if (why) said(why, true);
+  if (ONLINE) { $("asker").hidden = true; $("thread").hidden = true; document.body.classList.remove("has-box"); foldToday(); keptLine(); }
   document.body.dataset.ready = "1";
 }
 function showHealth() {
   document.getElementById("signin").hidden = true;
   document.getElementById("body").hidden = false;
   document.querySelector(".fresh").hidden = false;
+  if (ONLINE) {
+    $("asker").hidden = false; document.body.classList.add("has-box"); $("signin-kept").hidden = true; placeAsker();
+    if (unkept && unkept.by === me() && !$("ask-input").value) { $("ask-input").value = unkept.words; $("ask-send").disabled = false; }
+    isOwner().then(o => { if (o === false) { $("asker").hidden = true; $("thread").hidden = true; document.body.classList.remove("has-box"); foldToday(); } });
+  }
 }
 
 // A renewal: true when a fresh sign-in is kept, false when the database said no (signed out), null with no answer.
@@ -421,7 +565,7 @@ async function loadOnline() {
   let s = session();
   if (!s) { forget(); return showSignIn(); }
   if (Date.now() > s.expires_at - 60000) {
-    const r = await renew(s);
+    const r = await renewOnce(s);
     if (r === false) { forget(); return showSignIn(SAY.out); }
     s = session() || s;
   }
@@ -430,7 +574,7 @@ async function loadOnline() {
   try {
     res = await readRow(s);
     if (res.status === 401) {
-      const r = await renew(s);
+      const r = await renewOnce(s);
       if (r === false) { forget(); return showSignIn(SAY.out); }
       res = r ? await readRow(session()) : null;
     }
@@ -458,6 +602,8 @@ async function loadOnline() {
         pcShift = typeof kept.pcShift === "number" ? kept.pcShift : 0; docRefused = kept.docRefused === true; } } catch (e) {}
   }
   draw();
+  flush(false);                            // what is kept on this device goes first, in order
+  if (!$("thread").hidden) readThread();
 }
 
 if (ONLINE) {
@@ -497,6 +643,322 @@ if (ONLINE) {
     button.disabled = false;
   });
   document.getElementById("signin-again").addEventListener("click", () => { codeForm.hidden = true; emailForm.hidden = false; said(""); });
+}
+
+// ---------------------------------------------------------------- the box: his words, kept (mission-control-box.md)
+// His message goes straight into the database with his own sign-in, with an id made here, so a second try is the
+// same message (the database ignores it). Until the database has it, it is kept on this device (KEEP_BOX), and sent
+// in the order he pressed Send, one window at a time, whenever the page is open with a signal. Kept through a sign-out
+// (he pressed Send on it) and sent only under his own account. The line under the box is written here by rule, from
+// what the database and the main PC's heartbeat said; never by a session.
+const BOX_SAY = {
+  kept: "Got it. Kept, and waiting to be placed.",
+  off: "Got it. The main PC is off, so this will be placed when it is back on.",
+  keptOnly: "Got it. Kept.",
+  later: "Not sent yet. Kept on this {d}; it goes when Mission Control is open with a connection.",
+  signIn: "Not sent yet. Kept on this {d}; it goes once you sign in.",
+  refused: "Not sent. The database refused it. It is kept in Your messages.",
+  notKept: "Not sent. This {d} could not keep it, so it is back in the box.",
+  tooLong: "Too long for one message. Split it in two.",
+  mic: "Press the microphone on your keyboard.",
+  kept1: "1 message is kept on this {d} and goes once you sign in.",
+  keptN: "{n} messages are kept on this {d} and go once you sign in.",
+  asOf: "As of {t}. No connection now.",
+  found1: "1 message says “{q}”.",
+  foundN: "{n} messages say “{q}”.",
+  foundNone: "Nothing in your messages says “{q}”.",
+  empty: "Nothing sent yet. What you send shows here, with each answer.",
+  older: "Show older",
+  again: "Send again",
+  by: "VynTel",
+  waiting: "Waiting to be placed",
+  answered: "Answered",
+  queued: "In the queue",
+  done: "Done",
+  no: "No, because ...",
+  unsent: "Not sent yet",
+  refusedTag: "Not sent: refused"
+};
+const KEEP_BOX = "mc-box-q:", KEEP_THREAD = "mc-thread", LONGEST = 4000, PAGE = 200, ROWS = 1000, WAIT_MS = 20000;
+const device = () => innerWidth < 1000 ? "phone" : "laptop";
+const $ = id => document.getElementById(id);
+let threadAt = null, thread = {messages: [], answers: []}, shown = PAGE, ownerOf = {};
+let backoff = 0, nextTry = 0, inFlight = null, unkept = null;
+const answeredAs = {};                     // each message's last answer, whichever send got it (a send asked for
+                                           // behind another may send his new one first; his line is still its own)
+
+// Each kept message has a key of its own (KEEP_BOX + its id), so two windows never write over each other's: no read,
+// change and write of one shared list. Each carries the account that typed it (`by`, the sign-in's own id), and only
+// that account sees or sends it.
+function me() {                            // this sign-in's account id, from inside its own token
+  const s = session();
+  try { return s ? JSON.parse(atob(s.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub || null : null; } catch (e) { return null; }
+}
+function queued(all) {
+  const out = [], who = me();
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(KEEP_BOX)) continue;
+      try { const m = JSON.parse(localStorage.getItem(k)); if (m && m.id && (all || m.by === who)) out.push(m); } catch (e) {}
+    }
+  } catch (e) {}
+  return out.sort((x, y) => Date.parse(x.said_at) - Date.parse(y.said_at));
+}
+function keepOne(m) { try { localStorage.setItem(KEEP_BOX + m.id, JSON.stringify(m)); return localStorage.getItem(KEEP_BOX + m.id) !== null; } catch (e) { return false; } }
+function unqueue(id) { try { localStorage.removeItem(KEEP_BOX + id); } catch (e) {} }
+function markQueued(id, state) { const m = queued(true).find(x => x.id === id); if (m) keepOne(Object.assign({}, m, {state})); }
+
+function sayBox(text, bad) { const el = $("ask-said"); set(el, text || ""); el.classList.toggle("is-bad", !!bad); }
+
+// One renewal at a time: the Health read and the box share it.
+let renewing = null;
+function renewOnce(s) { if (!renewing) renewing = renew(s).finally(() => { renewing = null; }); return renewing; }
+
+// A call to the database with his sign-in: {r}, or {out: true} when he is signed out, or {offline: true}.
+async function rest(method, path, body, extra) {
+  let s = session();
+  if (!s) return {out: true};
+  if (Date.now() > s.expires_at - 60000) {
+    const n = await renewOnce(s);
+    if (n === false) { signedOut(); return {out: true}; }
+    s = session() || s;
+  }
+  const go = k => { const stop = new AbortController(), timer = setTimeout(() => stop.abort(), WAIT_MS);
+    return fetch(ONLINE.url + path, {method, cache: "no-store", signal: stop.signal, body: body == null ? undefined : JSON.stringify(body),
+      headers: Object.assign({"apikey": ONLINE.key, "Authorization": "Bearer " + k.access_token}, extra || {})}).finally(() => clearTimeout(timer)); };
+  try {
+    let r = await go(s);
+    if (r.status === 401) {
+      const n = await renewOnce(s);
+      if (n === false) { signedOut(); return {out: true}; }
+      if (n === null) return {offline: true};
+      r = await go(session());
+    }
+    return {r};
+  } catch (e) { return {offline: true}; }
+}
+
+// Whether this sign-in is his own account (its own line of who is who): true, false, or null when not known now.
+async function isOwner() {
+  const s = session();
+  if (!s) return false;
+  if (s.access_token in ownerOf) return ownerOf[s.access_token];
+  const got = await rest("GET", "/rest/v1/accounts?select=role", null, {"Accept-Profile": "mc"});
+  if (got.out) return false;
+  if (got.offline || got.r.status === 429 || got.r.status >= 500) return null;
+  let rows = [];
+  try { rows = got.r.ok ? await got.r.json() : []; } catch (e) { return null; }
+  const mine = Array.isArray(rows) && rows.some(r => r && r.role === "owner");
+  ownerOf = {[s.access_token]: mine};
+  return mine;
+}
+
+// One message to the database: "kept", "later" (no signal, busy), "out" (signed out), or "refused".
+async function sendOne(m) {
+  const got = await rest("POST", "/rest/v1/messages?on_conflict=id",
+    {id: m.id, words: m.words, said_at: m.said_at, sent_from: m.sent_from},
+    {"Content-Type": "application/json", "Content-Profile": "mc", "Prefer": "resolution=ignore-duplicates,return=minimal"});
+  if (got.out) return "out";
+  if (got.offline || got.r.status === 429 || got.r.status >= 500) return "later";
+  return got.r.ok ? "kept" : "refused";
+}
+
+// Everything kept on this device, in the order he pressed Send, then `extra` (one the device could not keep).
+// One window at a time (the browser's own lock across windows); `wait` waits for the lock, else a busy one skips.
+// Returns each message's outcome by id.
+function flush(wait, extra) {
+  const run = async () => {
+    const out = {};
+    if (!wait && Date.now() < nextTry) return out;
+    const mine = await isOwner();
+    const list = queued().filter(m => m.state !== "refused").concat(extra ? [extra] : []);
+    if (mine !== true) {                   // signed out, another account, or not known now: nothing is sent
+      const how = !session() ? "out" : mine === false ? "notHis" : "later";
+      list.forEach(m => { out[m.id] = how; });
+      return out;
+    }
+    for (const m of list) {
+      const how = await sendOne(m);
+      out[m.id] = how;
+      if (how === "kept") { unqueue(m.id); backoff = 0; nextTry = 0; continue; }
+      if (how === "refused") { markQueued(m.id, "refused"); continue; }
+      if (how === "later") { backoff = Math.min(300000, backoff ? backoff * 2 : 15000); nextTry = Date.now() + backoff; }
+      if (how === "out") signedOut();
+      list.slice(list.indexOf(m) + 1).forEach(x => { out[x.id] = how; });
+      break;
+    }
+    Object.assign(answeredAs, out);
+    if (Object.keys(out).length && !$("thread").hidden) readThread();
+    return out;
+  };
+  const go = () => navigator.locks ? navigator.locks.request("mc-box-send", wait ? {} : {ifAvailable: true}, l => l === null ? {} : run()) : run();
+  inFlight = (inFlight || Promise.resolve()).then(go, go);
+  return inFlight;
+}
+
+function signedOut() { forget(); showSignIn(SAY.out); }
+
+async function send(text) {
+  const words = text.trim();
+  if (!words) return;
+  if (text.length > LONGEST) return sayBox(BOX_SAY.tooLong, true);
+  const again = unkept && unkept.words === text ? unkept : null;   // the same words sent again: the same message
+  const m = {id: again ? again.id : crypto.randomUUID(), words: text, said_at: again ? again.said_at : new Date().toISOString(),
+             sent_from: device(), state: "waiting", by: me()};
+  const keptHere = keepOne(m);
+  unkept = null;
+  $("ask-input").value = ""; $("ask-send").disabled = true;
+  if (!$("thread").hidden) drawThread();
+  const out = await flush(true, keptHere ? null : m);
+  const how = out[m.id] || answeredAs[m.id] || (keptHere ? "later" : "lost");
+  if (how === "kept") {
+    const heard = answered == null ? null : now() - answered;
+    sayBox(heard == null ? BOX_SAY.keptOnly : heard < QUIET_MS ? BOX_SAY.kept : BOX_SAY.off);
+  } else if (!keptHere) {                  // not kept here and not sent: back in the box, never lost
+    unkept = m;                            // signed out meanwhile: back in the box once his own account is in
+    if (!$("ask-input").value) { $("ask-input").value = text; $("ask-send").disabled = false; }
+    sayBox(BOX_SAY.notKept.replace("{d}", device()), true);
+  } else if (how === "refused") sayBox(BOX_SAY.refused, true);
+  else if (how === "out") keptLine();
+  else sayBox((how === "out" || !session() ? BOX_SAY.signIn : BOX_SAY.later).replace("{d}", device()), true);
+  if (!$("thread").hidden) drawThread();
+}
+
+function keptLine() {                      // on the sign-in: what is still kept on this device
+  const n = queued(true).filter(m => m.state !== "refused").length, el = $("signin-kept");   // a refused one waits for Send again
+  el.hidden = !n;
+  set(el, !n ? "" : (n === 1 ? BOX_SAY.kept1 : BOX_SAY.keptN.replace("{n}", String(n))).replace("{d}", device()));
+}
+
+// ---- the thread
+// All of one table, newest first, a page of ROWS at a time (the database answers at most that many at once).
+async function every(path) {
+  const rows = [];
+  for (let from = 0; ; from += ROWS) {
+    const got = await rest("GET", path + "&limit=" + ROWS + "&offset=" + from, null, {"Accept-Profile": "mc"});
+    if (got.out) return {out: true};
+    if (!got.r || !got.r.ok) return null;
+    let page;
+    try { page = await got.r.json(); } catch (e) { return null; }
+    if (!Array.isArray(page)) return null;
+    rows.push(...page);
+    if (page.length < ROWS) return rows;
+  }
+}
+async function readThread() {
+  if ((await isOwner()) === false) return;
+  const [messages, answers] = await Promise.all([
+    every("/rest/v1/messages?select=id,words,said_at,tag&order=said_at.desc,id.desc"),
+    every("/rest/v1/answers?select=id,message_id,words,tag,written_at&order=written_at.desc,id.desc")]);
+  if ((messages && messages.out) || (answers && answers.out)) return signedOut();
+  let ok = false;
+  if (messages && answers) {
+    thread = {messages, answers}; threadAt = Date.now(); ok = true;
+    try { localStorage.setItem(KEEP_THREAD, JSON.stringify({at: threadAt, messages, answers})); } catch (e) {}
+  }
+  if (!ok && !threadAt) {                  // no answer: the thread as last read on this device
+    try { const k = JSON.parse(localStorage.getItem(KEEP_THREAD) || "null");
+      if (k && Array.isArray(k.messages)) { thread = {messages: k.messages, answers: k.answers || []}; threadAt = k.at; } } catch (e) {}
+  }
+  drawThread(ok ? null : threadAt);
+}
+
+function clock(iso) {                      // the time alone today; the weekday and time this week; the date and time before
+  const d = new Date(iso), t = new Date(Date.now()), h = d.getHours();
+  const c = (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + (h < 12 ? " AM" : " PM");
+  const days = Math.round((new Date(t.toDateString()) - new Date(d.toDateString())) / 86400000);
+  return days <= 0 ? c : days < 7 ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()] + " " + c
+       : d.getDate() + " " + MONTHS[d.getMonth()] + ", " + c;
+}
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+function drawThread(asOf) {
+  const list = $("thread-list"), typed = $("thread-find").value.trim(), q = typed.toLowerCase();
+  const server = new Set(thread.messages.map(m => m.id));
+  const mine = thread.messages.map(m => Object.assign({}, m))
+    .concat(queued().filter(m => !server.has(m.id)).map(m => Object.assign({}, m, {tag: m.state === "refused" ? "refused" : "unsent"})))
+    .sort((x, y) => Date.parse(x.said_at) - Date.parse(y.said_at));
+  const by = {};
+  thread.answers.forEach(a => { (by[a.message_id] = by[a.message_id] || []).push(a); });
+  const hit = m => !q || (m.words || "").toLowerCase().includes(q) || (by[m.id] || []).some(a => (a.words || "").toLowerCase().includes(q));
+  const found = mine.filter(hit);
+  const said = $("thread-said");
+  if (q) set(said, (found.length === 0 ? BOX_SAY.foundNone : found.length === 1 ? BOX_SAY.found1 : BOX_SAY.foundN.replace("{n}", String(found.length)))
+                     .replace("{q}", () => typed));
+  else set(said, asOf ? BOX_SAY.asOf.replace("{t}", clock(new Date(asOf).toISOString())) : "");
+  const at = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+  list.textContent = "";
+  const from = Math.max(0, found.length - shown);
+  if (from > 0) { const b = el("button", "thread-older", BOX_SAY.older); b.type = "button"; b.dataset.act = "older"; list.appendChild(b); }
+  if (!found.length && !q) list.appendChild(el("li", "thread-empty", BOX_SAY.empty));
+  found.slice(from).forEach(m => {
+    const li = el("li", "msg"); li.dataset.id = m.id;
+    const head = el("div", "msg-head");
+    head.appendChild(el("span", "msg-time", clock(m.said_at)));
+    const tag = el("span", "tag" + (m.tag === "unsent" ? " t-unsent" : m.tag === "refused" ? " t-refused" : ""),
+                   {unsent: BOX_SAY.unsent, refused: BOX_SAY.refusedTag}[m.tag] || BOX_SAY[m.tag] || BOX_SAY.waiting);
+    head.appendChild(tag); li.appendChild(head);
+    li.appendChild(el("p", "msg-words", m.words));
+    if (m.tag === "refused") { const b = el("button", "msg-again", BOX_SAY.again); b.type = "button"; b.dataset.act = "again"; li.appendChild(b); }
+    (by[m.id] || []).forEach(a => {
+      const d = el("div", "ans"), h = el("div", "ans-head");
+      h.appendChild(el("b", null, BOX_SAY.by)); h.appendChild(document.createTextNode(clock(a.written_at)));
+      d.appendChild(h); d.appendChild(el("p", null, a.words)); li.appendChild(d);
+    });
+    list.appendChild(li);
+  });
+  if (at) list.scrollTop = list.scrollHeight;
+}
+
+function openThread() {
+  $("thread").hidden = false; shown = PAGE;
+  document.documentElement.style.setProperty("--top-h", document.querySelector(".top").offsetHeight + "px");
+  drawThread(); readThread();
+  $("thread-close").focus();
+}
+function closeThread() { $("thread").hidden = true; $("thread-find").value = ""; $("ask-thread").focus(); }
+
+// On a phone with the box at the foot, today's test runs are folded to one line and open with a press; on a laptop,
+// or with no box, they are always open and the press does nothing.
+const WIDE = matchMedia("(min-width:1000px) and (min-height:640px)");
+function folds() { return document.body.classList.contains("has-box") && !WIDE.matches; }
+function foldToday(open) {
+  const part = $("today-part"), b = $("today-open");
+  if (open != null) part.classList.toggle("is-open", open);
+  if (folds()) b.setAttribute("aria-expanded", String(part.classList.contains("is-open"))); else b.removeAttribute("aria-expanded");
+}
+
+function placeAsker() {                    // the phone's keyboard: the box rides above it
+  const a = $("asker"), v = window.visualViewport;
+  const lift = v && innerWidth < 1000 ? Math.max(0, innerHeight - v.height - v.offsetTop) : 0;
+  a.style.transform = lift ? "translateY(" + -lift + "px)" : "";
+  document.documentElement.style.setProperty("--asker-h", innerWidth < 1000 && !a.hidden ? a.offsetHeight + lift + "px" : "0px");
+  foldToday();
+}
+
+if (ONLINE) {
+  const input = $("ask-input");
+  input.addEventListener("input", () => { $("ask-send").disabled = !input.value.trim(); });
+  $("ask").addEventListener("submit", ev => { ev.preventDefault(); send(input.value); });
+  $("ask-mic").addEventListener("click", () => { input.focus(); sayBox(BOX_SAY.mic); });
+  $("ask-thread").addEventListener("click", openThread);
+  $("today-open").addEventListener("click", () => { if (folds()) foldToday(!$("today-part").classList.contains("is-open")); });
+  $("thread-close").addEventListener("click", closeThread);
+  document.addEventListener("keydown", ev => { if (ev.key === "Escape" && !$("thread").hidden) closeThread(); });
+  $("thread-find").addEventListener("input", () => drawThread(null));
+  $("thread-list").addEventListener("click", ev => {
+    const b = ev.target.closest("button"); if (!b) return;
+    if (b.dataset.act === "older") { shown += PAGE; drawThread(); }
+    if (b.dataset.act === "again") { markQueued(b.closest(".msg").dataset.id, "waiting"); drawThread(); flush(true); }
+  });
+  let y0 = null;                           // a swipe down on the drawer's head closes it
+  $("thread-head").addEventListener("touchstart", ev => { y0 = ev.touches[0].clientY; }, {passive: true});
+  $("thread-head").addEventListener("touchend", ev => { if (y0 != null && ev.changedTouches[0].clientY - y0 > 80) closeThread(); y0 = null; });
+  if (window.visualViewport) { visualViewport.addEventListener("resize", placeAsker); visualViewport.addEventListener("scroll", placeAsker); }
+  addEventListener("resize", placeAsker);
+  addEventListener("online", () => { nextTry = 0; flush(false); });
 }
 
 const load = ONLINE ? loadOnline : loadHere;
